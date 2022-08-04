@@ -42,7 +42,7 @@ jobs:
             sudo curl --create-dirs -L -o /usr/local/bin/repo -O -L https://storage.googleapis.com/git-repo-downloads/repo
             sudo chmod a+rx /usr/local/bin/repo
             
-       - name: Sync
+       - name: setup folder
          run: |
              mkdir workspace
              cd workspace
@@ -50,20 +50,61 @@ jobs:
              sudo dpkg -i megacmd_1.5.1-1.1_amd64.deb
              mkdir -p ${{ github.event.inputs.ROMNAME }}
              cd ${{ github.event.inputs.ROMNAME }}
-             repo init --depth=1 -u ${{ github.event.inputs.LINK }} -b ${{ github.event.inputs.BRANCH }}
+             
+             
+             
+       - name: repo init
+         run: |
+             cd workspace/${{ github.event.inputs.ROMNAME }}
+             repo init -q -u ${{ github.event.inputs.LINK }} -b ${{ github.event.inputs.BRANCH }} --depth=1
+             pwd
+             
+             
+       - name: trim darwin
+         run: |
+             cd workspace/${{ github.event.inputs.ROMNAME }}
+             cd .repo/manifests
+             find . -type f -name '*.xml' | xargs sed -i '/darwin/d'
+             git commit -a -m "Magic" || true
+             cd ../
+             sed -i '/darwin/d' manifest.xml
+             cd ../
+             pwd
+             
+             
+       - name: Repo sync
+         run: |
+             cd workspace/${{ github.event.inputs.ROMNAME }}
              repo sync -c -f -q --force-sync --no-clone-bundle --no-tags -j32
              ls
              ls -la
              du -d 1 -h
              cd ..
+             pwd
              du -hs ${{ github.event.inputs.ROMNAME }}
              ls
+             
+             
+       - name: remove .repo
+         run: |
+             cd workspace
              rm -rf ${{ github.event.inputs.ROMNAME }}/.repo
              du -hs ${{ github.event.inputs.ROMNAME }}
+             
+             
+       - name: Compress rom folder
+         run: |
+             cd workspace
              export XZ_OPT=-9e
              tar -I pxz -cf - ${{ github.event.inputs.ROMNAME }}/ | split -b 1000M - ${{ github.event.inputs.ROMNAME }}-$(date +%Y%m%d).tar.xz
              ls
              pwd
+             df -h
+             
+             
+       - name: Upload
+         run: |
+             cd workspace
              mega-login ${{ github.event.inputs.MEGAEMAIL }} ${{ github.event.inputs.MEGAPASS }}
              mega-mkdir ${{ github.event.inputs.ROMNAME }}-$(date +%Y%m%d)
              mega-put /home/runner/work/romsync-compress-upload/romsync-compress-upload/workspace/${{ github.event.inputs.ROMNAME }}-$(date +%Y%m%d).tar.* /${{ github.event.inputs.ROMNAME }}-$(date +%Y%m%d)/
