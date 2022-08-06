@@ -41,6 +41,9 @@ jobs:
             sudo -E apt-get -qq --fix-broken install
             sudo curl --create-dirs -L -o /usr/local/bin/repo -O -L https://storage.googleapis.com/git-repo-downloads/repo
             sudo chmod a+rx /usr/local/bin/repo
+            wget -O free_disk_space.sh https://raw.githubusercontent.com/sheikhshahnawaz41299/flink/master/tools/azure-pipelines/free_disk_space.sh
+            chmod u+x free_disk_space.sh
+            sudo ./free_disk_space.sh
             
        - name: setup folder
          run: |
@@ -56,7 +59,7 @@ jobs:
        - name: repo init
          run: |
              cd workspace/${{ github.event.inputs.ROMNAME }}
-             repo init -q -u ${{ github.event.inputs.LINK }} -b ${{ github.event.inputs.BRANCH }} --depth=1
+             repo init --depth=1 --no-repo-verify -u ${{ github.event.inputs.LINK }} -b ${{ github.event.inputs.BRANCH }} -g default,-mips,-darwin,-notdefault
              pwd
              
              
@@ -75,7 +78,7 @@ jobs:
        - name: Repo sync
          run: |
              cd workspace/${{ github.event.inputs.ROMNAME }}
-             repo sync -c -f -q --force-sync --no-clone-bundle --no-tags -j32
+             repo sync -c --no-clone-bundle --no-tags --optimized-fetch --prune --force-sync -j32
              ls
              ls -la
              du -d 1 -h
