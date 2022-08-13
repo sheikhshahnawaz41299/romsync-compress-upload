@@ -31,3 +31,4 @@ jobs:
             chmod u+x free_disk_space.sh
             sudo ./free_disk_space.sh
             df -h
+            java -version
